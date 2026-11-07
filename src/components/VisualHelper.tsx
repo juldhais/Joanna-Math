@@ -1,18 +1,17 @@
-import { Apple, Bird, Circle, Cookie, Diamond, Flower, Heart, Moon, Square, Star, Triangle } from 'lucide-react'
-import type { LucideIcon } from 'lucide-react'
+import { ICON_MAP, MAX_ICON_COUNT, resolveIconName } from '../data/icons'
 import type { VisualMetadata } from '../types/quiz'
 
-const iconMap: Record<string, LucideIcon> = { apple: Apple, bird: Bird, circle: Circle, cookie: Cookie, diamond: Diamond, flower: Flower, heart: Heart, moon: Moon, square: Square, star: Star, triangle: Triangle, rectangle: Square }
-
 export function VisualHelper({ visual }: { visual?: VisualMetadata }) {
-  if (!visual) return null
+  if (!visual || !Array.isArray(visual.items)) return null
 
   if (visual.type === 'icons') return (
     <div className="visual-box visual-icons" aria-label="Question illustration">
       {visual.items.map((item, groupIndex) => {
-        const Icon = iconMap[item.icon ?? 'star'] ?? Star
-        return <div className="icon-group" key={`${item.icon}-${groupIndex}`}>
-          {Array.from({ length: Math.min(item.count ?? 1, 12) }, (_, index) => <Icon key={index} className={item.color ?? 'text-indigo-500'} size={31} strokeWidth={2.2} />)}
+        const name = resolveIconName(item.icon)
+        if (!name) return null
+        const Icon = ICON_MAP[name]
+        return <div className="icon-group" key={`${name}-${groupIndex}`}>
+          {Array.from({ length: Math.min(Math.max(Math.floor(item.count ?? 1), 1), MAX_ICON_COUNT) }, (_, index) => <Icon key={index} className={item.color ?? 'text-indigo-500'} size={31} strokeWidth={2.2} />)}
         </div>
       })}
     </div>
@@ -28,7 +27,9 @@ export function VisualHelper({ visual }: { visual?: VisualMetadata }) {
 
   return <div className="visual-box shapes-box" aria-label="Shape illustration">
     {visual.items.map((item, index) => {
-      const Icon = iconMap[item.icon ?? 'circle'] ?? Circle
+      const name = resolveIconName(item.icon)
+      if (!name) return null
+      const Icon = ICON_MAP[name]
       return <div className="shape-item" key={index}><Icon className="text-indigo-500" size={36} strokeWidth={1.8} /><span>{item.label}</span></div>
     })}
   </div>

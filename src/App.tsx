@@ -6,6 +6,7 @@ import { ResultView } from './components/ResultView'
 import { FISO_LEVELS } from './data/levels'
 import { fallbackQuestions } from './data/questions'
 import { DEFAULT_MODEL, generateQuestions } from './services/openrouter'
+import { sanitizeStoredQuestions } from './services/questionValidation'
 import type { Question, QuizSession } from './types/quiz'
 
 const SESSION_KEY = 'fiso_kg_sim_state'
@@ -17,18 +18,7 @@ function readCachedQuestions(levelId: string): Question[] | null {
     const levelCache = `${AI_QUESTIONS_KEY}_${levelId}`
     const raw = localStorage.getItem(levelCache) ?? (levelId === 'kindergarten' ? localStorage.getItem(AI_QUESTIONS_KEY) : null)
     if (!raw) return null
-    const parsed: unknown = JSON.parse(raw)
-    if (!Array.isArray(parsed) || parsed.length !== 20) return null
-    const valid = parsed.every((question) => {
-      if (!question || typeof question !== 'object') return false
-      const item = question as Partial<Question>
-      return typeof item.id === 'string' && typeof item.category === 'string' &&
-        typeof item.prompt === 'string' && Array.isArray(item.options) && item.options.length === 4 &&
-        item.options.every((option) => typeof option === 'string') &&
-        Number.isInteger(item.correctAnswer) && (item.correctAnswer as number) >= 0 &&
-        (item.correctAnswer as number) < 4 && typeof item.explanation === 'string'
-    })
-    return valid ? parsed as Question[] : null
+    return sanitizeStoredQuestions(JSON.parse(raw))
   } catch { return null }
 }
 
