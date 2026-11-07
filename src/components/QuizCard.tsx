@@ -1,26 +1,64 @@
-import { ArrowLeft, ArrowRight, Check, Flag } from 'lucide-react'
+import { useEffect, useRef, useState } from 'react'
+import { ArrowLeft, ArrowRight, Bookmark, Check, Clock, Flag } from 'lucide-react'
 import type { Question } from '../types/quiz'
 import { VisualHelper } from './VisualHelper'
 
+export const formatTime = (seconds: number) => {
+  const total = Math.max(0, Math.floor(seconds))
+  const hours = Math.floor(total / 3600)
+  const pad = (value: number) => String(value).padStart(2, '0')
+  return `${hours ? `${hours}:` : ''}${pad(Math.floor((total % 3600) / 60))}:${pad(total % 60)}`
+}
+
 interface QuizCardProps {
-  question: Question
+  questions: Question[]
   levelLabel: string
   index: number
-  total: number
-  selectedAnswer?: number
+  answers: Record<string, number>
+  flagged: string[]
+  initialElapsed: number
   onSelect: (answer: number) => void
+  onToggleFlag: () => void
   onNavigate: (index: number) => void
-  onSubmit: () => void
+  onElapsed: (seconds: number) => void
+  onSubmit: (seconds: number) => void
   onExit: () => void
 }
 
-export function QuizCard({ question, levelLabel, index, total, selectedAnswer, onSelect, onNavigate, onSubmit, onExit }: QuizCardProps) {
-  const progress = ((index + 1) / total) * 100
-  return <main className="quiz-layout">
-    <div className="quiz-topline"><button className="text-button" onClick={onExit}><ArrowLeft size={17} /> Exit test</button><span>{levelLabel} · Question {index + 1} of {total}</span></div>
-    <div className="progress-track" role="progressbar" aria-label="Test progress" aria-valuenow={index + 1} aria-valuemin={1} aria-valuemax={total}><div style={{ width: `${progress}%` }} /></div>
-    <section className="question-card">
-      <div className="question-meta"><span className="category-pill">{question.category}</span><span className="question-number">{String(index + 1).padStart(2, '0')}</span></div>
+export function QuizCard({ questions, levelLabel, index, answers, flagged, initialElapsed, onSelect, onToggleFlag, onNavigate, onElapsed, onSubmit, onExit }: QuizCardProps) {
+  const question = questions[index]
+  const total = questions.length
+  const selectedAnswer = answers[question.id]
+  const isFlagged = flagged.includes(question.id)
+  const answeredCount = questions.filter((item) => answers[item.id] !== undefined).length
+
+  const [elapsed, setElapsed] = useState(initialElapsed)
+  const elapsedRef = useRef(initialElapsed)
+  const onElapsedRef = useRef(onElapsed)
+  onElapsedRef.current = onElapsed
+  useEffect(() => {
+    const started = Date.now() - initialElapsed * 1000
+    const tick = window.setInterval(() => { elapsedRef.current = Math.floor((Date.now() - started) / 1000); setElapsed(elapsedRef.current) }, 1000)
+    const save = window.setInterval(() => onElapsedRef.current(elapsedRef.current), 10000)
+    return () => { window.clearInterval(tick); window.clearInterval(save) }
+  }, [initialElapsed])
+
+  const finish = () => {
+    const unanswered = total - answeredCount
+    const message = unanswered ? `You have ${unanswered} unanswered question${unanswered === 1 ? '' : 's'}. Submit your answer sheet anyway?` : 'Submit your answer sheet? You cannot change answers afterwards.'
+    if (window.confirm(message)) onSubmit(elapsedRef.current)
+  }
+  const exit = () => { onElapsed(elapsedRef.current); onExit() }
+
+  return <main className="quiz-layout exam-layout">
+    <div className="exam-bar">
+      <button className="text-button" onClick={exit}><ArrowLeft size={17} /> Exit</button>
+      <div className="exam-title"><strong>FISO Mathematics</strong><span>{levelLabel}</span></div>
+      <div className="exam-clock" aria-label="Time elapsed" role="timer"><Clock size={15} />{formatTime(elapsed)}</div>
+    </div>
+    <div className="exam-progress"><span>{answeredCount} of {total} answered</span><div className="progress-track" role="progressbar" aria-label="Questions answered" aria-valuenow={answeredCount} aria-valuemin={0} aria-valuemax={total}><div style={{ width: `${(answeredCount / total) * 100}%` }} /></div></div>
+    <section className="question-card exam-paper">
+      <div className="question-meta"><span className="exam-qno">Question {index + 1}<small> / {total}</small></span><span className="category-pill">{question.category}</span></div>
       <h1>{question.prompt}</h1>
       <VisualHelper visual={question.visual} />
       <div className="options-list" role="radiogroup" aria-label="Answer choices">
@@ -28,12 +66,20 @@ export function QuizCard({ question, levelLabel, index, total, selectedAnswer, o
           <span className="option-letter">{String.fromCharCode(65 + optionIndex)}</span><span className="option-text">{option}</span>{selectedAnswer === optionIndex && <Check size={19} className="option-check" />}
         </button>)}
       </div>
+      <div className="exam-actions"><button className={`flag-button ${isFlagged ? 'on' : ''}`} onClick={onToggleFlag} aria-pressed={isFlagged}><Bookmark size={15} /> {isFlagged ? 'Marked for review' : 'Mark for review'}</button>{selectedAnswer !== undefined && <span className="exam-saved"><Check size={13} /> Answer saved</span>}</div>
       <div className="question-nav">
         <button className="button button-secondary" onClick={() => onNavigate(index - 1)} disabled={index === 0}><ArrowLeft size={17} /> Previous</button>
-        {index < total - 1 ? <button className="button button-primary" onClick={() => onNavigate(index + 1)}>Next question <ArrowRight size={17} /></button> : <button className="button button-primary" onClick={onSubmit}><Flag size={17} /> Finish test</button>}
+        {index < total - 1 ? <button className="button button-primary" onClick={() => onNavigate(index + 1)}>Next <ArrowRight size={17} /></button> : <button className="button button-primary" onClick={finish}><Flag size={17} /> Submit test</button>}
       </div>
     </section>
-    <div className="question-dots" aria-label="Question navigation">{Array.from({ length: total }, (_, dotIndex) => <button key={dotIndex} className={`${dotIndex === index ? 'current' : ''} ${dotIndex === index ? '' : ''}`} data-answered={dotIndex === index ? 'current' : undefined} onClick={() => onNavigate(dotIndex)} aria-label={`Go to question ${dotIndex + 1}`} aria-current={dotIndex === index ? 'step' : undefined} />)}</div>
+    <section className="answer-sheet" aria-label="Answer sheet">
+      <div className="sheet-head"><strong>Answer sheet</strong><button className="text-button" onClick={finish}>Submit test</button></div>
+      <div className="sheet-grid">{questions.map((item, itemIndex) => {
+        const state = [answers[item.id] !== undefined ? 'answered' : '', flagged.includes(item.id) ? 'flagged' : '', itemIndex === index ? 'current' : ''].join(' ')
+        return <button key={item.id} className={`sheet-cell ${state}`} onClick={() => onNavigate(itemIndex)} aria-label={`Question ${itemIndex + 1}${answers[item.id] !== undefined ? ', answered' : ', unanswered'}${flagged.includes(item.id) ? ', marked for review' : ''}`} aria-current={itemIndex === index ? 'step' : undefined}>{itemIndex + 1}</button>
+      })}</div>
+      <div className="sheet-legend"><span><i className="answered" /> Answered</span><span><i /> Unanswered</span><span><i className="flagged" /> Marked</span></div>
+    </section>
     <p className="quiz-note"><Check size={14} /> Your answers are saved automatically</p>
   </main>
 }

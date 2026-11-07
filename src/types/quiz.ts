@@ -29,6 +29,8 @@ export interface QuizSession {
   currentQuestionIndex: number
   selectedAnswers: Record<string, number>
   isSubmitted: boolean
+  flagged?: string[]
+  elapsedSeconds?: number
   timestamp: number
   source: 'static' | 'openrouter' | 'cached'
 }
