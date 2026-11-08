@@ -2,22 +2,25 @@
 
 ## Project overview
 
-Joanna-Math is a responsive React + TypeScript app for FISO math practice. It provides selectable levels, a built-in Kindergarten question bank, and optional AI-generated question sets through OpenRouter.
+Joanna-Math is a responsive React + TypeScript app for FISO math practice. It provides selectable levels and a built-in bank of 100 generated questions per level; each test is a shuffled draw of 20. There is no AI or network dependency.
 
 ## Commands
 
 - `npm run dev` — start the local Vite development server.
 - `npm run build` — run the TypeScript project build and create the production bundle.
 - `npm run preview` — preview the production build locally.
+- `npm run check:bank` — verify the built-in question banks (size, validity, answers, shuffling).
 
-Run `npm run build` after code changes to check TypeScript and production bundling.
+Run `npm run build` (and `npm run check:bank` after bank changes) to check TypeScript and production bundling.
 
 ## Codebase map
 
 - `src/App.tsx` — app state, level selection, local-storage persistence, and quiz flow.
-- `src/data/levels.ts` — FISO level labels and age-appropriate guidance.
-- `src/data/questions.ts` — the built-in Kindergarten question bank.
-- `src/services/openrouter.ts` — AI prompt, OpenRouter request, and response parsing.
+- `src/data/levels.ts` — FISO levels and each level's 20-question topic blueprint.
+- `src/data/bank/` — per-level question generators (seeded templates; each topic builds 5× its blueprint count).
+- `src/data/questionBank.ts` — builds the 100-question bank per level and draws a shuffled 20-question paper.
+- `src/data/icons.ts` — Lucide icon registry and colour classes used by visuals.
+- `src/services/questionValidation.ts` — question and visual validation used by `npm run check:bank`.
 - `src/types/quiz.ts` — question, visual, and quiz-session types.
 - `src/components/` — quiz, result, visual, and API-key settings UI.
 - `src/index.css` — global and component styling.
@@ -25,10 +28,10 @@ Run `npm run build` after code changes to check TypeScript and production bundli
 ## Conventions and requirements
 
 - Follow the existing React function-component and TypeScript patterns. Keep types strict; the TypeScript config enables `strict`, `noUnusedLocals`, and `noUnusedParameters`.
-- Keep question data compatible across the built-in bank, OpenRouter responses, cached question sets, and quiz rendering. Questions have exactly four options and a zero-based `correctAnswer` from 0 to 3.
-- Keep AI prompt instructions and response parsing aligned with the `Question` and `VisualMetadata` types.
-- Visual icons are rendered from the Lucide icon map in `src/components/VisualHelper.tsx`. AI-generated visuals should use supported icon names and existing visual types; do not introduce image URLs or image data for icons.
-- Preserve the current local-storage behavior and fallback flow unless the task specifically asks to change it. Do not expose API keys in source code; OpenRouter calls currently run in the browser, and this security tradeoff is documented in `README.md`.
+- Keep question data compatible across the built-in bank, saved sessions, and quiz rendering. Questions have exactly four options and a zero-based `correctAnswer` from 0 to 3.
+- Generators must build every answer from the same numbers as the prompt, and `npm run check:bank` must pass.
+- Visual icons are rendered from the icon map in `src/data/icons.ts` by `src/components/VisualHelper.tsx`. Visuals must use supported icon names and existing visual types; do not introduce image URLs or image data for icons.
+- Preserve the current local-storage behavior (saved session and selected level) unless the task asks to change it. Do not add API keys or network calls without being asked.
 - Keep the interface responsive and consistent with the existing styling. The stylesheet is compact and largely minified; when editing it, make the smallest targeted change and avoid duplicating existing rules.
 - Avoid adding dependencies for changes that can be handled with the current React, TypeScript, and Lucide packages.
 

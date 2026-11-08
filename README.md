@@ -1,6 +1,6 @@
 # Joanna-Math
 
-A responsive FISO math practice app with selectable levels, a 20-question built-in bank, and optional OpenRouter-generated question sets tailored to the selected level.
+A responsive FISO-style math practice app. Pick a level (Kindergarten, Levels 1–6) and sit a timed 20-question multiple-choice paper with an answer sheet, mark-for-review and worked solutions. It is unofficial practice material and works fully offline.
 
 ## Run locally
 
@@ -11,6 +11,14 @@ npm run dev
 
 Create a production build with `npm run build`.
 
-## OpenRouter setup
+## Question bank
 
-Choose a FISO level on the start screen. Open **AI settings**, enter an OpenRouter API key, and choose a model slug (the default is `openrouter/free`). Generated questions and the selected level are saved in this browser's local storage; cached questions are kept separately for each level. Keys and model choices are also stored in local storage. Requests are made directly from the browser; this is convenient for a local practice app, but browser-stored keys are accessible to anyone with access to the browser profile. For a public deployment, use a server-side proxy rather than embedding personal API keys in the client. If generation fails, the app uses saved questions for the selected level when available, otherwise the built-in question bank.
+Every level has a built-in bank of exactly 100 questions, generated deterministically (seeded) from templates in `src/data/bank/`. Each paper draws 20 of them following the level's topic blueprint, then shuffles the question order and the answer options, so every attempt is different. There is no AI service and no API key.
+
+Verify the banks after changing any generator:
+
+```bash
+npm run check:bank
+```
+
+The check confirms 100 questions per level, the topic split, valid question shape, distinct options, correct arithmetic for `Find a + b = ?` style prompts, and that shuffled papers are unique.

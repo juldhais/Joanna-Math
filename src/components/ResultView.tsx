@@ -9,17 +9,16 @@ interface ResultViewProps {
   elapsedSeconds: number
   onRetake: () => void
   onHome: () => void
-  isLoading: boolean
 }
 
-export function ResultView({ questions, levelLabel, answers, elapsedSeconds, onRetake, onHome, isLoading }: ResultViewProps) {
+export function ResultView({ questions, levelLabel, answers, elapsedSeconds, onRetake, onHome }: ResultViewProps) {
   const score = questions.reduce((sum, question) => sum + (answers[question.id] === question.correctAnswer ? 1 : 0), 0)
   const unanswered = questions.filter((question) => answers[question.id] === undefined).length
   const wrong = questions.length - score - unanswered
   const categories = [...questions.reduce((map, question) => { const entry = map.get(question.category) ?? { right: 0, total: 0 }; entry.total++; if (answers[question.id] === question.correctAnswer) entry.right++; return map.set(question.category, entry) }, new Map<string, { right: number; total: number }>())]
   const accuracy = Math.round((score / questions.length) * 100)
   return <main className="results-layout">
-    <button className="text-button" onClick={onHome} disabled={isLoading}><ArrowLeft size={17} /> Back to home</button>
+    <button className="text-button" onClick={onHome}><ArrowLeft size={17} /> Back to home</button>
     <section className="results-summary">
       <span className="eyebrow">ANSWER SHEET SUBMITTED</span>
       <h1>Your results</h1>
@@ -28,7 +27,7 @@ export function ResultView({ questions, levelLabel, answers, elapsedSeconds, onR
       <div className="score-grid"><div className="score-card"><span>Raw score</span><strong>{score} <small>/ {questions.length}</small></strong></div><div className="score-card"><span>Accuracy</span><strong>{accuracy}<small>%</small></strong></div><div className="score-card"><span>Time taken</span><strong>{formatTime(elapsedSeconds)}</strong></div></div>
       <div className="tally"><span className="tally-right">{score} correct</span><span className="tally-wrong">{wrong} incorrect</span><span className="tally-blank">{unanswered} unanswered</span></div>
       {categories.length > 1 && <div className="topic-breakdown"><strong>By topic</strong>{categories.map(([name, { right, total }]) => <div key={name}><span>{name}</span><div className="progress-track"><div style={{ width: `${(right / total) * 100}%` }} /></div><em>{right}/{total}</em></div>)}</div>}
-      <button className="button button-primary" onClick={onRetake} disabled={isLoading}>{isLoading ? <><span className="spinner" /> Starting new test…</> : <><RotateCcw size={17} /> Retake test</>}</button>
+      <button className="button button-primary" onClick={onRetake}><RotateCcw size={17} /> Take a new paper</button>
     </section>
     <section className="review-section">
       <div className="review-heading"><div><span className="eyebrow">ANSWER REVIEW</span><h2>Question-by-question</h2></div><span>{score} correct · {questions.length - score} to review</span></div>

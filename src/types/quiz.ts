@@ -32,5 +32,4 @@ export interface QuizSession {
   flagged?: string[]
   elapsedSeconds?: number
   timestamp: number
-  source: 'static' | 'openrouter' | 'cached'
 }
