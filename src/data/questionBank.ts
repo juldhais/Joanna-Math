@@ -1,14 +1,18 @@
 import type { Question } from '../types/quiz'
 import type { FisoLevel } from './levels'
 import { createRng } from './bank/helpers'
-import type { Rng } from './bank/helpers'
+import type { Rng, Topic } from './bank/helpers'
 
-/** Each topic's bank holds this many questions per question in the 20-question blueprint, so a level has 100. */
+/** Each topic's bank holds this many questions per question in the 20-question blueprint, so a level has 100 unless a topic sets its own `bank`. */
 export const BANK_MULTIPLIER = 5
-export const BANK_SIZE = 100
+export const BANK_SIZE = 100 // minimum per level
 export const PAPER_SIZE = 20
 
 const MAX_TRIES_PER_QUESTION = 200
+
+export const topicBankSize = (topic: Topic) => topic.bank ?? topic.count * BANK_MULTIPLIER
+/** Number of questions in a level's bank (at least BANK_SIZE). */
+export const bankSizeOf = (level: FisoLevel) => level.topics.reduce((sum, topic) => sum + topicBankSize(topic), 0)
 
 interface BankedQuestion extends Question { topic: string }
 
@@ -16,14 +20,14 @@ const banks = new Map<string, BankedQuestion[]>()
 
 const hash = (text: string) => [...text].reduce((h, char) => (Math.imul(h, 31) + char.charCodeAt(0)) >>> 0, 7)
 
-/** Builds (once) the fixed 100-question bank for a level. Seeded, so it is identical on every load. */
+/** Builds (once) the fixed question bank for a level. Seeded, so it is identical on every load. */
 export function getQuestionBank(level: FisoLevel): Question[] {
   const cached = banks.get(level.id)
   if (cached) return cached
   const bank: BankedQuestion[] = []
   level.topics.forEach((topic, topicIndex) => {
     const rng = createRng(hash(level.id) + topicIndex * 7919)
-    const target = topic.count * BANK_MULTIPLIER
+    const target = topicBankSize(topic)
     const seen = new Set<string>()
     const made: BankedQuestion[] = []
     for (let tries = 0; tries < target * MAX_TRIES_PER_QUESTION && made.length < target; tries++) {

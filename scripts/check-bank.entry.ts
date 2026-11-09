@@ -1,5 +1,5 @@
 import { FISO_LEVELS } from '../src/data/levels'
-import { BANK_SIZE, PAPER_SIZE, generatePaper, getQuestionBank } from '../src/data/questionBank'
+import { BANK_SIZE, PAPER_SIZE, bankSizeOf, generatePaper, getQuestionBank, topicBankSize } from '../src/data/questionBank'
 import { validateQuestion } from '../src/services/questionValidation'
 
 const numeric = (text: string): number | null => {
@@ -14,7 +14,7 @@ const fail = (message: string) => { failures++; console.log(`FAIL ${message}`) }
 
 for (const level of FISO_LEVELS) {
   const bank = getQuestionBank(level)
-  if (bank.length !== BANK_SIZE) fail(`${level.label}: bank has ${bank.length}, expected ${BANK_SIZE}`)
+  if (bank.length !== bankSizeOf(level) || bank.length < BANK_SIZE) fail(`${level.label}: bank has ${bank.length}, expected ${bankSizeOf(level)} (min ${BANK_SIZE})`)
   if (new Set(bank.map((q) => q.id)).size !== bank.length) fail(`${level.label}: duplicate ids`)
   const prompts = new Set(bank.map((q) => q.prompt))
   for (const q of bank) {
@@ -28,7 +28,7 @@ for (const level of FISO_LEVELS) {
   }
   for (const topic of level.topics) {
     const n = bank.filter((q) => q.category === topic.name).length
-    if (n !== topic.count * 5) fail(`${level.label} "${topic.name}": ${n} questions`)
+    if (n !== topicBankSize(topic)) fail(`${level.label} "${topic.name}": ${n} questions`)
   }
   const sum = level.topics.reduce((s, t) => s + t.count, 0)
   if (sum !== PAPER_SIZE) fail(`${level.label}: blueprint sums to ${sum}`)

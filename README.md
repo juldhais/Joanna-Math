@@ -13,7 +13,7 @@ Create a production build with `npm run build`.
 
 ## Question bank
 
-Every level has a built-in bank of exactly 100 questions, generated deterministically (seeded) from templates in `src/data/bank/`. Each paper draws 20 of them following the level's topic blueprint, then shuffles the question order and the answer options, so every attempt is different. There is no AI service and no API key.
+Every level has a built-in bank of at least 100 questions (Kindergarten has 180, covering counting, patterns, number order, everyday word problems, measurement, days and clocks), generated deterministically (seeded) from templates in `src/data/bank/`. Each paper draws 20 of them following the level's topic blueprint, then shuffles the question order and the answer options, so every attempt is different. There is no AI service and no API key.
 
 Verify the banks after changing any generator:
 
@@ -21,4 +21,4 @@ Verify the banks after changing any generator:
 npm run check:bank
 ```
 
-The check confirms 100 questions per level, the topic split, valid question shape, distinct options, correct arithmetic for `Find a + b = ?` style prompts, and that shuffled papers are unique.
+The check confirms the bank size per level (100 minimum), the topic split, valid question shape, distinct options, correct arithmetic for `Find a + b = ?` style prompts, and that shuffled papers are unique.

@@ -2,7 +2,7 @@
 
 ## Project overview
 
-Joanna-Math is a responsive React + TypeScript app for FISO math practice. It provides selectable levels and a built-in bank of 100 generated questions per level; each test is a shuffled draw of 20. There is no AI or network dependency.
+Joanna-Math is a responsive React + TypeScript app for FISO math practice. It provides selectable levels and a built-in bank of at least 100 generated questions per level (Kindergarten has 180); each test is a shuffled draw of 20. There is no AI or network dependency.
 
 ## Commands
 
@@ -18,7 +18,7 @@ Run `npm run build` (and `npm run check:bank` after bank changes) to check TypeS
 - `src/App.tsx` — app state, level selection, local-storage persistence, and quiz flow.
 - `src/data/levels.ts` — FISO levels and each level's 20-question topic blueprint.
 - `src/data/bank/` — per-level question generators (seeded templates; each topic builds 5× its blueprint count).
-- `src/data/questionBank.ts` — builds the 100-question bank per level and draws a shuffled 20-question paper.
+- `src/data/questionBank.ts` — builds the question bank per level (a topic may set its own `bank` size) and draws a shuffled 20-question paper.
 - `src/data/icons.ts` — Lucide icon registry and colour classes used by visuals.
 - `src/services/questionValidation.ts` — question and visual validation used by `npm run check:bank`.
 - `src/types/quiz.ts` — question, visual, and quiz-session types.

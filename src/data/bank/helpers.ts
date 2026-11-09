@@ -33,7 +33,8 @@ export function createRng(seed: number): Rng {
 }
 
 export type Draft = Omit<Question, 'id' | 'category'>
-export interface Topic { name: string; count: number; make: (r: Rng) => Draft }
+/** `count` is the topic's share of a 20-question paper; `bank` overrides the default bank size of count × 5. */
+export interface Topic { name: string; count: number; bank?: number; make: (r: Rng) => Draft }
 
 /**
  * Builds a question. `answer` is the correct option text; `wrong` lists plausible wrong options, most
