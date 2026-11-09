@@ -1,5 +1,5 @@
 import { FISO_LEVELS } from '../src/data/levels'
-import { BANK_SIZE, PAPER_SIZE, bankSizeOf, generatePaper, getQuestionBank, topicBankSize } from '../src/data/questionBank'
+import { BANK_SIZE, PAPER_SIZE, bankSizeOf, drawPaper, generatePaper, papersToCover, getQuestionBank, topicBankSize } from '../src/data/questionBank'
 import { validateQuestion } from '../src/services/questionValidation'
 
 const numeric = (text: string): number | null => {
@@ -42,6 +42,22 @@ for (const level of FISO_LEVELS) {
     seenSets.add(paper.map((q) => q.id).join(','))
   }
   if (seenSets.size < 25) fail(`${level.label}: papers repeat`)
+  // Rotation: drawing papers with history must reach every bank question before any repeats, over several cycles.
+  const cover = papersToCover(level)
+  let seen: string[] = []
+  for (let cycle = 0; cycle < 3; cycle++) {
+    const counts = new Map<string, number>()
+    for (let i = 0; i < cover; i++) {
+      const draw = drawPaper(level, seen)
+      seen = draw.seen
+      if (draw.questions.length !== PAPER_SIZE || new Set(draw.questions.map((q) => q.id)).size !== PAPER_SIZE) fail(`${level.label}: bad rotated paper`)
+      draw.questions.forEach((q) => counts.set(q.id, (counts.get(q.id) ?? 0) + 1))
+    }
+    const missing = bank.filter((q) => !counts.has(q.id)).length
+    if (missing) fail(`${level.label} cycle ${cycle + 1}: ${missing} questions never drawn in ${cover} papers`)
+    const evenSplit = level.topics.every((t) => topicBankSize(t) % t.count === 0)
+    if (evenSplit && [...counts.values()].some((n) => n > 1)) fail(`${level.label} cycle ${cycle + 1}: question repeated before bank was exhausted`)
+  }
 }
 console.log(failures ? `${failures} failure(s)` : 'Bank check passed')
 process.exit(failures ? 1 : 0)

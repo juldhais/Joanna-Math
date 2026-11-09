@@ -3,11 +3,13 @@ import { BookOpenCheck, BrainCircuit, Check, ChevronRight, ShieldCheck } from 'l
 import { QuizCard } from './components/QuizCard'
 import { ResultView } from './components/ResultView'
 import { FISO_LEVELS } from './data/levels'
-import { PAPER_SIZE, bankSizeOf, generatePaper } from './data/questionBank'
+import { PAPER_SIZE, bankSizeOf, drawPaper } from './data/questionBank'
 import type { QuizSession } from './types/quiz'
 
 const SESSION_KEY = 'fiso_kg_sim_state'
 const LEVEL_STORAGE_KEY = 'fiso_math_level'
+/** Ids of bank questions already drawn in the current cycle, per level, so papers rotate through the whole bank. */
+const seenKey = (levelId: string) => `fiso_math_seen_${levelId}`
 /** Keys written by earlier versions that used OpenRouter. They are removed so no API key stays in the browser. */
 const OBSOLETE_KEYS = ['fiso_openrouter_key', 'fiso_openrouter_model', 'fiso_kg_ai_questions', ...FISO_LEVELS.map((level) => `fiso_kg_ai_questions_${level.id}`)]
 
@@ -19,6 +21,13 @@ function readSession(): QuizSession | null {
     if (!Array.isArray(parsed.questions) || !parsed.questions.length || typeof parsed.currentQuestionIndex !== 'number') return null
     return { ...parsed, levelId: typeof parsed.levelId === 'string' ? parsed.levelId : 'kindergarten' }
   } catch { return null }
+}
+
+function readSeen(levelId: string): string[] {
+  try {
+    const parsed: unknown = JSON.parse(localStorage.getItem(seenKey(levelId)) ?? '[]')
+    return Array.isArray(parsed) ? parsed.filter((id): id is string => typeof id === 'string') : []
+  } catch { return [] }
 }
 
 export default function App() {
@@ -38,7 +47,9 @@ export default function App() {
   const startTest = (levelId = selectedLevelId) => {
     const level = FISO_LEVELS.find((item) => item.id === levelId) ?? FISO_LEVELS[0]
     localStorage.removeItem(SESSION_KEY)
-    setSession({ questions: generatePaper(level), levelId: level.id, currentQuestionIndex: 0, selectedAnswers: {}, isSubmitted: false, flagged: [], elapsedSeconds: 0, timestamp: Date.now() })
+    const { questions, seen } = drawPaper(level, readSeen(level.id))
+    try { localStorage.setItem(seenKey(level.id), JSON.stringify(seen)) } catch { /* Storage may be unavailable. */ }
+    setSession({ questions, levelId: level.id, currentQuestionIndex: 0, selectedAnswers: {}, isSubmitted: false, flagged: [], elapsedSeconds: 0, timestamp: Date.now() })
   }
 
   const updateSession = (updates: Partial<QuizSession>) => setSession((current) => current ? { ...current, ...updates } : current)
