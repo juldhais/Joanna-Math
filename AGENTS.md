@@ -23,6 +23,7 @@ Run `npm run build` (and `npm run check:bank` after bank changes) to check TypeS
 - `src/services/questionValidation.ts` — question and visual validation used by `npm run check:bank`.
 - `src/types/quiz.ts` — question, visual, and quiz-session types.
 - `src/components/` — quiz, result, visual and confirm-dialog UI (the quiz has an offline read-aloud button using the browser speech API).
+- Kindergarten theme — `App.tsx` adds the `theme-kinder` class to the app shell when Kindergarten is selected or in play; its colours and animations live under `.theme-kinder` in `src/index.css`. Finishing a Kindergarten paper with at least half the questions answered wins a sticker (icon name stored in local storage under `fiso_math_stickers`, shown on the home page and results).
 - `src/index.css` — global and component styling.
 
 ## Conventions and requirements

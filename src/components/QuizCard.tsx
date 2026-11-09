@@ -1,11 +1,13 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { ArrowLeft, ArrowRight, Bookmark, Check, Clock, Flag, LogOut, Volume2 } from 'lucide-react'
+import { ArrowLeft, ArrowRight, Bookmark, Check, Clock, Flag, LogOut, Rocket, Star, Volume2 } from 'lucide-react'
 import type { Question } from '../types/quiz'
 import { VisualHelper } from './VisualHelper'
 import { ConfirmDialog } from './ConfirmDialog'
 
-const speechSupported = typeof window !== 'undefined' && 'speechSynthesis' in window
+export const speechSupported = typeof window !== 'undefined' && 'speechSynthesis' in window
 const stopSpeaking = () => { if (speechSupported) window.speechSynthesis.cancel() }
+/** Friendly words shown to Kindergarten students once an answer is picked; they do not say whether it is right. */
+const KID_CHEERS = ['Got it!', 'Good thinking!', 'Keep going!', 'Nice work!']
 /** Reads the question and its choices aloud with the browser's built-in voice (offline, no network). */
 const speakQuestion = (question: Question) => {
   if (!speechSupported) return
@@ -28,6 +30,8 @@ export const formatTime = (seconds: number) => {
 interface QuizCardProps {
   questions: Question[]
   levelLabel: string
+  /** Kindergarten: playful progress rider and encouragement. */
+  kid?: boolean
   index: number
   answers: Record<string, number>
   flagged: string[]
@@ -40,7 +44,7 @@ interface QuizCardProps {
   onExit: () => void
 }
 
-export function QuizCard({ questions, levelLabel, index, answers, flagged, initialElapsed, onSelect, onToggleFlag, onNavigate, onElapsed, onSubmit, onExit }: QuizCardProps) {
+export function QuizCard({ questions, levelLabel, kid = false, index, answers, flagged, initialElapsed, onSelect, onToggleFlag, onNavigate, onElapsed, onSubmit, onExit }: QuizCardProps) {
   const question = questions[index]
   const total = questions.length
   const selectedAnswer = answers[question.id]
@@ -78,9 +82,10 @@ export function QuizCard({ questions, levelLabel, index, answers, flagged, initi
       <div className="exam-title"><strong>FISO Mathematics</strong><span>{levelLabel}</span></div>
       <div className="exam-clock" aria-label="Time elapsed" role="timer"><Clock size={15} />{formatTime(elapsed)}</div>
     </div>
-    <div className="exam-progress"><span>{answeredCount} of {total} answered</span><div className="progress-track" role="progressbar" aria-label="Questions answered" aria-valuenow={answeredCount} aria-valuemin={0} aria-valuemax={total}><div style={{ width: `${(answeredCount / total) * 100}%` }} /></div></div>
+    <div className="exam-progress"><span>{answeredCount} of {total} answered</span><div className="progress-wrap"><div className="progress-track" role="progressbar" aria-label="Questions answered" aria-valuenow={answeredCount} aria-valuemin={0} aria-valuemax={total}><div style={{ width: `${(answeredCount / total) * 100}%` }} /></div>{kid && <span className="progress-rider" style={{ left: `${(answeredCount / total) * 100}%` }} aria-hidden="true"><Rocket size={20} /></span>}</div>{kid && <Star size={22} className={`progress-goal ${answeredCount === total ? 'on' : ''}`} aria-hidden="true" />}</div>
     <section className="question-card exam-paper">
       <div className="question-meta"><span className="exam-qno">Question {index + 1}<small> / {total}</small></span><span className="category-pill">{question.category}</span></div>
+      <div className="question-body" key={question.id}>
       <div className="question-prompt"><h1>{question.prompt}</h1>{speechSupported && <button className="listen-button" onClick={() => speakQuestion(question)} aria-label="Read the question aloud" title="Read aloud"><Volume2 size={22} /><span>Listen</span></button>}</div>
       <VisualHelper visual={question.visual} />
       <div className="options-list" role="radiogroup" aria-label="Answer choices">
@@ -88,7 +93,8 @@ export function QuizCard({ questions, levelLabel, index, answers, flagged, initi
           <span className={`option-letter letter-${optionIndex}`}>{String.fromCharCode(65 + optionIndex)}</span><span className="option-text">{option}</span>{selectedAnswer === optionIndex && <Check size={19} className="option-check" />}
         </button>)}
       </div>
-      <div className="exam-actions"><button className={`flag-button ${isFlagged ? 'on' : ''}`} onClick={onToggleFlag} aria-pressed={isFlagged}><Bookmark size={15} /> {isFlagged ? 'Marked for review' : 'Mark for review'}</button>{selectedAnswer !== undefined && <span className="exam-saved"><Check size={13} /> Answer saved</span>}</div>
+      </div>
+      <div className="exam-actions"><button className={`flag-button ${isFlagged ? 'on' : ''}`} onClick={onToggleFlag} aria-pressed={isFlagged}><Bookmark size={15} /> {isFlagged ? 'Marked for review' : 'Mark for review'}</button>{selectedAnswer !== undefined && <span className="exam-saved" key={`${question.id}-${selectedAnswer}`}>{kid ? <Star size={15} /> : <Check size={13} />} {kid ? KID_CHEERS[index % KID_CHEERS.length] : 'Answer saved'}</span>}</div>
       <div className="question-nav">
         <button className="button button-secondary" onClick={() => onNavigate(index - 1)} disabled={index === 0}><ArrowLeft size={17} /> Previous</button>
         {index < total - 1 ? <button className="button button-primary" onClick={() => onNavigate(index + 1)}>Next <ArrowRight size={17} /></button> : <button className="button button-primary" onClick={finish}><Flag size={17} /> Finish test</button>}

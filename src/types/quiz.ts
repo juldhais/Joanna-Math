@@ -31,5 +31,7 @@ export interface QuizSession {
   isSubmitted: boolean
   flagged?: string[]
   elapsedSeconds?: number
+  /** Icon name of the sticker won by finishing this paper (Kindergarten only). */
+  reward?: string
   timestamp: number
 }
