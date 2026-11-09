@@ -1,7 +1,22 @@
-import { useEffect, useRef, useState } from 'react'
-import { ArrowLeft, ArrowRight, Bookmark, Check, Clock, Flag } from 'lucide-react'
+import { useCallback, useEffect, useRef, useState } from 'react'
+import { ArrowLeft, ArrowRight, Bookmark, Check, Clock, Flag, LogOut, Volume2 } from 'lucide-react'
 import type { Question } from '../types/quiz'
 import { VisualHelper } from './VisualHelper'
+import { ConfirmDialog } from './ConfirmDialog'
+
+const speechSupported = typeof window !== 'undefined' && 'speechSynthesis' in window
+const stopSpeaking = () => { if (speechSupported) window.speechSynthesis.cancel() }
+/** Reads the question and its choices aloud with the browser's built-in voice (offline, no network). */
+const speakQuestion = (question: Question) => {
+  if (!speechSupported) return
+  const spoken = (text: string) => text.replace(/_{2,}/g, ' blank ').replace(/[−–]/g, ' minus ').replace(/×/g, ' times ').replace(/÷/g, ' divided by ')
+  const choices = question.options.map((option, index) => `${String.fromCharCode(65 + index)}: ${spoken(option)}.`).join(' ')
+  const utterance = new SpeechSynthesisUtterance(`${spoken(question.prompt)} ${choices}`)
+  utterance.lang = 'en-AU'
+  utterance.rate = 0.9
+  stopSpeaking()
+  window.speechSynthesis.speak(utterance)
+}
 
 export const formatTime = (seconds: number) => {
   const total = Math.max(0, Math.floor(seconds))
@@ -43,12 +58,19 @@ export function QuizCard({ questions, levelLabel, index, answers, flagged, initi
     return () => { window.clearInterval(tick); window.clearInterval(save) }
   }, [initialElapsed])
 
-  const finish = () => {
-    const unanswered = total - answeredCount
-    const message = unanswered ? `You have ${unanswered} unanswered question${unanswered === 1 ? '' : 's'}. Submit your answer sheet anyway?` : 'Submit your answer sheet? You cannot change answers afterwards.'
-    if (window.confirm(message)) onSubmit(elapsedRef.current)
+  useEffect(() => stopSpeaking, [index])
+
+  const [confirming, setConfirming] = useState<'submit' | 'exit' | null>(null)
+  const unanswered = total - answeredCount
+  const finish = () => setConfirming('submit')
+  const exit = () => setConfirming('exit')
+  const closeDialog = useCallback(() => setConfirming(null), [])
+  const confirm = () => {
+    stopSpeaking()
+    if (confirming === 'submit') onSubmit(elapsedRef.current)
+    else { onElapsed(elapsedRef.current); onExit() }
+    setConfirming(null)
   }
-  const exit = () => { onElapsed(elapsedRef.current); onExit() }
 
   return <main className="quiz-layout exam-layout">
     <div className="exam-bar">
@@ -59,21 +81,21 @@ export function QuizCard({ questions, levelLabel, index, answers, flagged, initi
     <div className="exam-progress"><span>{answeredCount} of {total} answered</span><div className="progress-track" role="progressbar" aria-label="Questions answered" aria-valuenow={answeredCount} aria-valuemin={0} aria-valuemax={total}><div style={{ width: `${(answeredCount / total) * 100}%` }} /></div></div>
     <section className="question-card exam-paper">
       <div className="question-meta"><span className="exam-qno">Question {index + 1}<small> / {total}</small></span><span className="category-pill">{question.category}</span></div>
-      <h1>{question.prompt}</h1>
+      <div className="question-prompt"><h1>{question.prompt}</h1>{speechSupported && <button className="listen-button" onClick={() => speakQuestion(question)} aria-label="Read the question aloud" title="Read aloud"><Volume2 size={22} /><span>Listen</span></button>}</div>
       <VisualHelper visual={question.visual} />
       <div className="options-list" role="radiogroup" aria-label="Answer choices">
         {question.options.map((option, optionIndex) => <button key={optionIndex} className={`option-card ${selectedAnswer === optionIndex ? 'selected' : ''}`} role="radio" aria-checked={selectedAnswer === optionIndex} onClick={() => onSelect(optionIndex)}>
-          <span className="option-letter">{String.fromCharCode(65 + optionIndex)}</span><span className="option-text">{option}</span>{selectedAnswer === optionIndex && <Check size={19} className="option-check" />}
+          <span className={`option-letter letter-${optionIndex}`}>{String.fromCharCode(65 + optionIndex)}</span><span className="option-text">{option}</span>{selectedAnswer === optionIndex && <Check size={19} className="option-check" />}
         </button>)}
       </div>
       <div className="exam-actions"><button className={`flag-button ${isFlagged ? 'on' : ''}`} onClick={onToggleFlag} aria-pressed={isFlagged}><Bookmark size={15} /> {isFlagged ? 'Marked for review' : 'Mark for review'}</button>{selectedAnswer !== undefined && <span className="exam-saved"><Check size={13} /> Answer saved</span>}</div>
       <div className="question-nav">
         <button className="button button-secondary" onClick={() => onNavigate(index - 1)} disabled={index === 0}><ArrowLeft size={17} /> Previous</button>
-        {index < total - 1 ? <button className="button button-primary" onClick={() => onNavigate(index + 1)}>Next <ArrowRight size={17} /></button> : <button className="button button-primary" onClick={finish}><Flag size={17} /> Submit test</button>}
+        {index < total - 1 ? <button className="button button-primary" onClick={() => onNavigate(index + 1)}>Next <ArrowRight size={17} /></button> : <button className="button button-primary" onClick={finish}><Flag size={17} /> Finish test</button>}
       </div>
     </section>
     <section className="answer-sheet" aria-label="Answer sheet">
-      <div className="sheet-head"><strong>Answer sheet</strong><button className="text-button" onClick={finish}>Submit test</button></div>
+      <div className="sheet-head"><strong>Answer sheet</strong><button className="text-button" onClick={finish}>Finish test</button></div>
       <div className="sheet-grid">{questions.map((item, itemIndex) => {
         const state = [answers[item.id] !== undefined ? 'answered' : '', flagged.includes(item.id) ? 'flagged' : '', itemIndex === index ? 'current' : ''].join(' ')
         return <button key={item.id} className={`sheet-cell ${state}`} onClick={() => onNavigate(itemIndex)} aria-label={`Question ${itemIndex + 1}${answers[item.id] !== undefined ? ', answered' : ', unanswered'}${flagged.includes(item.id) ? ', marked for review' : ''}`} aria-current={itemIndex === index ? 'step' : undefined}>{itemIndex + 1}</button>
@@ -81,5 +103,7 @@ export function QuizCard({ questions, levelLabel, index, answers, flagged, initi
       <div className="sheet-legend"><span><i className="answered" /> Answered</span><span><i /> Unanswered</span><span><i className="flagged" /> Marked</span></div>
     </section>
     <p className="quiz-note"><Check size={14} /> Your answers are saved automatically</p>
+    {confirming === 'submit' && <ConfirmDialog icon={<Flag size={20} />} title={unanswered ? `${unanswered} question${unanswered === 1 ? '' : 's'} left` : 'All done?'} message={unanswered ? 'Some questions have no answer yet. You can go back and answer them, or finish now.' : 'Great work! Once you finish, you cannot change your answers.'} confirmLabel="Finish test" cancelLabel={unanswered ? 'Go back' : 'Check again'} onConfirm={confirm} onCancel={closeDialog} />}
+    {confirming === 'exit' && <ConfirmDialog icon={<LogOut size={20} />} title="Take a break?" message="Your answers are saved. You can carry on from here next time." confirmLabel="Exit" cancelLabel="Keep going" onConfirm={confirm} onCancel={closeDialog} />}
   </main>
 }

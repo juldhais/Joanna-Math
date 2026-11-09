@@ -11,7 +11,7 @@ export function VisualHelper({ visual }: { visual?: VisualMetadata }) {
         if (!name) return null
         const Icon = ICON_MAP[name]
         return <div className="icon-group" key={`${name}-${groupIndex}`}>
-          {Array.from({ length: Math.min(Math.max(Math.floor(item.count ?? 1), 1), MAX_ICON_COUNT) }, (_, index) => <Icon key={index} className={item.color ?? 'text-indigo-500'} size={31} strokeWidth={2.2} />)}
+          {Array.from({ length: Math.min(Math.max(Math.floor(item.count ?? 1), 1), MAX_ICON_COUNT) }, (_, index) => <Icon key={index} className={item.color ?? 'text-indigo-500'} size={40} strokeWidth={2.2} />)}
         </div>
       })}
     </div>
@@ -30,7 +30,7 @@ export function VisualHelper({ visual }: { visual?: VisualMetadata }) {
       const name = resolveIconName(item.icon)
       if (!name) return null
       const Icon = ICON_MAP[name]
-      return <div className="shape-item" key={index}><Icon className="text-indigo-500" size={36} strokeWidth={1.8} /><span>{item.label}</span></div>
+      return <div className="shape-item" key={index}><Icon className="text-indigo-500" size={48} strokeWidth={1.8} /><span>{item.label}</span></div>
     })}
   </div>
 }

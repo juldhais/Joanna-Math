@@ -1,4 +1,4 @@
-import { ArrowLeft, RotateCcw } from 'lucide-react'
+import { ArrowLeft, RotateCcw, Star } from 'lucide-react'
 import type { Question } from '../types/quiz'
 import { formatTime } from './QuizCard'
 
@@ -17,14 +17,16 @@ export function ResultView({ questions, levelLabel, answers, elapsedSeconds, onR
   const wrong = questions.length - score - unanswered
   const categories = [...questions.reduce((map, question) => { const entry = map.get(question.category) ?? { right: 0, total: 0 }; entry.total++; if (answers[question.id] === question.correctAnswer) entry.right++; return map.set(question.category, entry) }, new Map<string, { right: number; total: number }>())]
   const accuracy = Math.round((score / questions.length) * 100)
+  const stars = accuracy >= 90 ? 3 : accuracy >= 60 ? 2 : accuracy >= 30 ? 1 : 0
+  const cheer = ['Good try! Let\'s practise again.', 'Nice work! Keep going.', 'Great job!', 'Amazing! Superstar!'][stars]
   return <main className="results-layout">
     <button className="text-button" onClick={onHome}><ArrowLeft size={17} /> Back to home</button>
     <section className="results-summary">
-      <span className="eyebrow">ANSWER SHEET SUBMITTED</span>
-      <h1>Your results</h1>
+      <div className="result-stars" role="img" aria-label={`${stars} of 3 stars`}>{[0, 1, 2].map((i) => <Star key={i} size={44} className={i < stars ? 'on' : ''} />)}</div>
+      <h1>{cheer}</h1>
       <span className="category-pill result-level">{levelLabel}</span>
-      <p className="muted">Review each question and its worked solution below.</p>
-      <div className="score-grid"><div className="score-card"><span>Raw score</span><strong>{score} <small>/ {questions.length}</small></strong></div><div className="score-card"><span>Accuracy</span><strong>{accuracy}<small>%</small></strong></div><div className="score-card"><span>Time taken</span><strong>{formatTime(elapsedSeconds)}</strong></div></div>
+      <p className="muted">You got {score} out of {questions.length} right. See the answers below.</p>
+      <div className="score-grid"><div className="score-card"><span>Score</span><strong>{score} <small>/ {questions.length}</small></strong></div><div className="score-card"><span>Accuracy</span><strong>{accuracy}<small>%</small></strong></div><div className="score-card"><span>Time taken</span><strong>{formatTime(elapsedSeconds)}</strong></div></div>
       <div className="tally"><span className="tally-right">{score} correct</span><span className="tally-wrong">{wrong} incorrect</span><span className="tally-blank">{unanswered} unanswered</span></div>
       {categories.length > 1 && <div className="topic-breakdown"><strong>By topic</strong>{categories.map(([name, { right, total }]) => <div key={name}><span>{name}</span><div className="progress-track"><div style={{ width: `${(right / total) * 100}%` }} /></div><em>{right}/{total}</em></div>)}</div>}
       <button className="button button-primary" onClick={onRetake}><RotateCcw size={17} /> Take a new paper</button>

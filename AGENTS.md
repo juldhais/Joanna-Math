@@ -22,7 +22,7 @@ Run `npm run build` (and `npm run check:bank` after bank changes) to check TypeS
 - `src/data/icons.ts` — Lucide icon registry and colour classes used by visuals.
 - `src/services/questionValidation.ts` — question and visual validation used by `npm run check:bank`.
 - `src/types/quiz.ts` — question, visual, and quiz-session types.
-- `src/components/` — quiz, result, visual, and API-key settings UI.
+- `src/components/` — quiz, result, visual and confirm-dialog UI (the quiz has an offline read-aloud button using the browser speech API).
 - `src/index.css` — global and component styling.
 
 ## Conventions and requirements
